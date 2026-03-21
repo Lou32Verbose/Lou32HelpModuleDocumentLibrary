@@ -2,6 +2,7 @@
 title = "LOU32HELP"
 tagline = "Lou32 Help Module Document Library"
 description = "Lou32 Help Module Document Library (L32HMDL)"
+# Used for canonical <link> tags in generated HTML
 base_url = "https://lou32help.example.com"
 copyright = "Help Module Document Library maintained by Lou32."
 
@@ -14,6 +15,7 @@ assets_dir = "assets"
 min_query_length = 2
 max_results = 25
 related_limit = 4
+# Maximum documents shown in the Featured section on the home page
 featured_limit = 8
 wasm_module = "lou32help_web_search"
 

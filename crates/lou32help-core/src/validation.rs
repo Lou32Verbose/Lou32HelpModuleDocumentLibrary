@@ -5,6 +5,28 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Display, Formatter};
 
+// ---- Validation issue code catalog ----
+//
+// Codes emitted by validate_workspace (this module):
+//   raw-html              Body contains raw HTML tags (forbidden for security)
+//   orphan-topic          Document topic not registered in lou32help.toml
+//   slug-topic-mismatch   Slug does not begin with the expected topic path prefix
+//   missing-section       Missing a required heading for the document's page type
+//   duplicate-slug        More than one document declares the same slug
+//   duplicate-alias       More than one document declares the same alias
+//   alias-slug-conflict   An alias normalizes to an existing document slug
+//   broken-related-link   A related slug does not resolve to any visible document
+//
+// Codes emitted by inspect_route_path (path_safety module):
+//   invalid-slug-path     Slug contains unsafe segments (traversal, reserved names)
+//   invalid-topic-path    Topic path contains unsafe segments
+//   invalid-related-path  Related slug contains unsafe segments
+//   invalid-tag-path      Tag contains unsafe segments
+//   invalid-topic-key     Configured topic key contains unsafe segments
+//
+// Codes emitted by validate_output_relative_path (path_safety module):
+//   unsafe-output-path    Generated output path would escape the site directory
+
 /// Controls which documents are included in validation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ValidationMode {

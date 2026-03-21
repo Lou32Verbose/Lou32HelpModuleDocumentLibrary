@@ -22,7 +22,12 @@ use tracing_subscriber::EnvFilter;
     about = "Terminal and static-site knowledge base tooling"
 )]
 struct Cli {
-    #[arg(long, global = true, default_value = ".")]
+    #[arg(
+        long,
+        global = true,
+        default_value = ".",
+        help = "Workspace root directory"
+    )]
     root: PathBuf,
     #[command(subcommand)]
     command: Commands,
@@ -30,50 +35,71 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    #[command(about = "Scaffold a new document with frontmatter and required sections")]
     New {
+        #[arg(help = "Topic path (e.g. powershell/networking)")]
         topic_path: String,
+        #[arg(help = "URL-safe leaf name for the new document")]
         slug: String,
-        #[arg(long = "type")]
+        #[arg(
+            long = "type",
+            help = "Page type: reference, recipe, troubleshooting, or template"
+        )]
         page_type: String,
     },
+    #[command(about = "Display a single document in the terminal")]
     Show {
+        #[arg(help = "Document slug or alias to look up")]
         slug_or_alias: String,
-        #[arg(long)]
+        #[arg(long, help = "Include draft documents")]
         drafts: bool,
     },
+    #[command(about = "Full-text search across the knowledge base")]
     Search {
+        #[arg(help = "Search terms (multiple words are joined)")]
         query: Vec<String>,
-        #[arg(long)]
+        #[arg(long, help = "Restrict results to a topic path")]
         topic: Option<String>,
-        #[arg(long = "type")]
+        #[arg(long = "type", help = "Restrict results to a page type")]
         page_type: Option<String>,
-        #[arg(long)]
+        #[arg(long, help = "Restrict results to a platform")]
         platform: Option<String>,
-        #[arg(long)]
+        #[arg(long, help = "Include draft documents in results")]
         drafts: bool,
     },
+    #[command(about = "List topics or show documents under a topic")]
     Topics {
+        #[arg(help = "Topic path to inspect; omit to list all topics")]
         topic_path: Option<String>,
-        #[arg(long)]
+        #[arg(long, help = "Include draft documents")]
         drafts: bool,
     },
+    #[command(about = "Show related documents for a given page")]
     Related {
+        #[arg(help = "Document slug to find related pages for")]
         slug: String,
-        #[arg(long)]
+        #[arg(long, help = "Include draft documents")]
         drafts: bool,
     },
+    #[command(about = "Validate all documents and configuration")]
     Check {
-        #[arg(long)]
+        #[arg(long, help = "Validate only published documents, excluding drafts")]
         published_only: bool,
     },
+    #[command(about = "Generate the static HTML site and browser search bundle")]
     Build {
-        #[arg(long)]
+        #[arg(long, help = "Include draft documents in the build")]
         drafts: bool,
     },
+    #[command(about = "Build the site and start a local preview server")]
     Serve {
-        #[arg(long, default_value_t = 4000)]
+        #[arg(
+            long,
+            default_value_t = 4000,
+            help = "Port number for the preview server"
+        )]
         port: u16,
-        #[arg(long)]
+        #[arg(long, help = "Include draft documents in the build")]
         drafts: bool,
     },
 }

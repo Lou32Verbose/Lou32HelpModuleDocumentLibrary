@@ -7,13 +7,39 @@ Markdown source files into:
 - a static HTML reference site with topic indexes, tag indexes, and related docs
 - a shared prebuilt search index used by the CLI and browser
 
+## Prerequisites
+
+- Rust toolchain (see `rust-version` in the workspace `Cargo.toml`)
+- WASM target: `rustup target add wasm32-unknown-unknown`
+- wasm-bindgen CLI: `cargo install wasm-bindgen-cli`
+
 ## Quick Start
 
 ```powershell
-cargo run -p lou32help-cli -- check
-cargo run -p lou32help-cli -- show /powershell/networking/bits-transfer/
-cargo run -p lou32help-cli -- search bits transfer
-cargo run -p lou32help-cli -- build
+# validate all documents and configuration
+cargo run -- check
+
+# look up a document by slug or alias
+cargo run -- show /powershell/networking/bits-transfer/
+
+# full-text search
+cargo run -- search bits transfer
+
+# scaffold a new document
+cargo run -- new powershell/networking dns-troubleshooting --type recipe
+
+# list all topics, or documents under a topic
+cargo run -- topics
+cargo run -- topics powershell
+
+# show related documents for a page
+cargo run -- related /powershell/networking/bits-transfer/
+
+# build the static site and browser search bundle
+cargo run -- build
+
+# build and serve a local preview
+cargo run -- serve --port 4000
 ```
 
 ## Verification
@@ -48,6 +74,30 @@ and preview-server request logs.
 - `crates/lou32help-cli`: terminal commands, build flow, and local preview server
 - `crates/lou32help-site`: static HTML generation
 - `crates/lou32help-web-search`: Rust-to-WASM browser search bridge
+
+## Configuration
+
+All settings live in `lou32help.toml` at the workspace root.
+
+| Section | Field | Purpose |
+|---------|-------|---------|
+| `[site]` | `title` | Display title used in page headers and `<title>` tags |
+| | `tagline` | Short tagline shown below the title |
+| | `description` | Meta description for search engines |
+| | `base_url` | Canonical base URL for `<link rel="canonical">` tags |
+| | `copyright` | Copyright text rendered in the site footer |
+| `[paths]` | `content_dir` | Markdown source directory (relative to workspace root) |
+| | `site_dir` | Static site output directory |
+| | `assets_dir` | Assets subdirectory within `site_dir` |
+| `[search]` | `min_query_length` | Minimum characters before a search executes |
+| | `max_results` | Maximum results returned per query |
+| | `related_limit` | Related documents computed per page |
+| | `featured_limit` | Documents shown in the Featured section on the home page |
+| | `wasm_module` | WASM module name (must match the web-search crate name) |
+| `[[topics]]` | `key` | Unique topic identifier matching the `content/` subdirectory |
+| | `title` | Human-readable topic title |
+| | `description` | Topic description for index pages |
+| | `order` | Display sort order |
 
 ## Legacy Migration
 

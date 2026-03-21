@@ -9,6 +9,7 @@ const queryInput = document.getElementById("query");
 const topicInput = document.getElementById("topic-filter");
 const typeInput = document.getElementById("type-filter");
 const platformInput = document.getElementById("platform-filter");
+const searchForm = document.getElementById("search-form");
 
 let indexJson = "";
 
@@ -144,7 +145,15 @@ async function verifyWasmIntegrity(wasmUrl) {
     return;
   }
 
+  if (typeof crypto === "undefined" || !crypto.subtle) {
+    console.warn("crypto.subtle not available (non-secure context); skipping WASM integrity check");
+    return;
+  }
+
   const response = await fetch(wasmUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch WASM for integrity check: ${response.status}`);
+  }
   const wasmBytes = await response.arrayBuffer();
   const hashBuffer = await crypto.subtle.digest("SHA-384", wasmBytes);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -156,6 +165,16 @@ async function verifyWasmIntegrity(wasmUrl) {
   }
 }
 
+searchForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  searchNow();
+});
+
+for (const element of [queryInput, topicInput, typeInput, platformInput]) {
+  element?.addEventListener("input", searchNow);
+  element?.addEventListener("change", searchNow);
+}
+
 async function main() {
   updateStatus("Loading search module...");
   const wasmUrl = new URL("./__WASM_MODULE___bg.wasm", import.meta.url);
@@ -164,20 +183,12 @@ async function main() {
   const response = await fetch(new URL("./search-index.json", import.meta.url));
   indexJson = await response.text();
 
-  queryInput.value = "";
-  topicInput.value = "";
-  typeInput.value = "";
-  platformInput.value = "";
-
   const params = new URLSearchParams(window.location.search);
-  queryInput.value = params.get("q") ?? "";
-  topicInput.value = params.get("topic") ?? "";
-  typeInput.value = params.get("type") ?? "";
-  platformInput.value = params.get("platform") ?? "";
-
-  for (const element of [queryInput, topicInput, typeInput, platformInput]) {
-    element?.addEventListener("input", searchNow);
-    element?.addEventListener("change", searchNow);
+  if (params.has("q")) {
+    queryInput.value = params.get("q") ?? "";
+    topicInput.value = params.get("topic") ?? "";
+    typeInput.value = params.get("type") ?? "";
+    platformInput.value = params.get("platform") ?? "";
   }
 
   if (queryInput.value.length >= MIN_QUERY_LENGTH) {

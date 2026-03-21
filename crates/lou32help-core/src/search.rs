@@ -496,6 +496,15 @@ fn filter_entry(
     topic_matches && type_matches && platform_matches
 }
 
+// Scoring tiers (highest to lowest):
+//   1. Identity matches — slug, alias, title exact matches indicate the user knows
+//      what they want. These dominate ranking to surface canonical lookups instantly.
+//   2. Partial identity matches — substring matches on identity fields still carry
+//      strong signal but rank below exact matches.
+//   3. Metadata matches — summary and topic provide moderate relevance signal.
+//   4. Per-token matches — individual query words matched against title words, tags,
+//      headings, platforms, and body provide supplementary signal. These accumulate
+//      across tokens so multi-word queries reward documents that match broadly.
 fn score_entry(
     entry: &impl SearchEntryLike,
     normalized_query: &str,
@@ -504,14 +513,17 @@ fn score_entry(
     let mut score = 0;
     let mut matched = BTreeSet::new();
 
+    // Slug exact: strongest identity signal — user typed the canonical path
     if entry.slug_search() == normalize_slug(normalized_query) {
         score += 240;
         matched.insert("slug".to_string());
     } else if entry.slug_search().contains(normalized_query) {
+        // Slug contains: query appears somewhere in the path
         score += 120;
         matched.insert("slug".to_string());
     }
 
+    // Alias exact: registered synonym, nearly as strong as slug
     if entry
         .alias_search()
         .iter()
@@ -524,23 +536,28 @@ fn score_entry(
         .iter()
         .any(|alias| alias.contains(normalized_query))
     {
+        // Alias contains: query is a substring of a registered alias
         score += 110;
         matched.insert("alias".to_string());
     }
 
+    // Title exact: user typed the full display name
     if entry.title_search() == normalized_query {
         score += 200;
         matched.insert("title".to_string());
     } else if entry.title_search().contains(normalized_query) {
+        // Title contains: query is a substring of the title
         score += 140;
         matched.insert("title".to_string());
     }
 
+    // Summary contains: the one-line description mentions the query
     if entry.summary_search().contains(normalized_query) {
         score += 80;
         matched.insert("summary".to_string());
     }
 
+    // Topic match: query matches a topic path, giving topical relevance
     if entry.topic_search() == normalized_query
         || entry
             .topic_search()
@@ -550,24 +567,26 @@ fn score_entry(
         matched.insert("topic".to_string());
     }
 
+    // Per-token scoring: each query word is matched independently against
+    // progressively weaker fields. Scores accumulate across tokens.
     for token in tokens {
         if entry
             .title_search()
             .split_whitespace()
             .any(|word| word == token)
         {
-            score += 35;
+            score += 35; // exact word in title
             matched.insert("title".to_string());
         } else if entry.title_search().contains(token) {
-            score += 18;
+            score += 18; // substring in title
             matched.insert("title".to_string());
         }
 
         if entry.tag_search().iter().any(|tag| tag == token) {
-            score += 28;
+            score += 28; // exact tag match
             matched.insert("tags".to_string());
         } else if entry.tag_search().iter().any(|tag| tag.contains(token)) {
-            score += 15;
+            score += 15; // substring in tag
             matched.insert("tags".to_string());
         }
 
@@ -576,7 +595,7 @@ fn score_entry(
             .iter()
             .any(|heading| heading.contains(token))
         {
-            score += 16;
+            score += 16; // token in section heading
             matched.insert("headings".to_string());
         }
 
@@ -585,12 +604,12 @@ fn score_entry(
             .iter()
             .any(|platform| platform == token)
         {
-            score += 14;
+            score += 14; // exact platform match
             matched.insert("platforms".to_string());
         }
 
         if entry.body_search().contains(token) {
-            score += 8;
+            score += 8; // weakest signal — token somewhere in body text
             matched.insert("body".to_string());
         }
     }
@@ -636,8 +655,13 @@ fn split_tokens(value: &str) -> Vec<String> {
         .collect()
 }
 
+/// Produce a bounded, normalized body excerpt for the browser search index.
+/// Limits size so the JSON payload every page load must fetch stays small.
 fn bounded_body_search(value: &str) -> String {
+    // 48 tokens captures enough leading content for keyword matching.
     const MAX_TOKENS: usize = 48;
+    // Hard character ceiling prevents pathologically long tokens (e.g. base64
+    // strings or URLs) from inflating the index.
     const MAX_CHARS: usize = 256;
 
     let normalized = normalize_text(value);
