@@ -6,9 +6,69 @@
   --border: #cccccc;
   --link: #0000ee;
   --visited: #551a8b;
+  --code-bg: #f3f3f3;
+  --stripe: #f9f9f9;
+  --accent: #0000ee;
   --sans: "Segoe UI", Arial, Helvetica, sans-serif;
   --mono: "Courier New", Courier, monospace;
 }
+
+/* Dark — pure black, white text, cyan links */
+[data-theme="dark"] {
+  --bg: #000000;
+  --panel: #111111;
+  --ink: #ffffff;
+  --muted: #aaaaaa;
+  --border: #333333;
+  --link: #00ccff;
+  --visited: #9999ff;
+  --code-bg: #111111;
+  --stripe: #0a0a0a;
+  --accent: #00ccff;
+}
+
+/* Enterprise 2004 — Windows XP/Server 2003 admin console */
+[data-theme="enterprise"] {
+  --bg: #ece9d8;
+  --panel: #d6d2c2;
+  --ink: #000000;
+  --muted: #444444;
+  --border: #808080;
+  --link: #003399;
+  --visited: #003399;
+  --code-bg: #ffffff;
+  --stripe: #e4e0d0;
+  --accent: #003399;
+}
+
+/* Geocities — late-90s web, navy bg, neon text */
+[data-theme="geocities"] {
+  --bg: #000080;
+  --panel: #000066;
+  --ink: #00ff00;
+  --muted: #ffff00;
+  --border: #00ff00;
+  --link: #ff00ff;
+  --visited: #ff6600;
+  --code-bg: #000066;
+  --stripe: #00006b;
+  --accent: #ff00ff;
+}
+
+/* Terminal — green phosphor CRT */
+[data-theme="terminal"] {
+  --bg: #000000;
+  --panel: #001100;
+  --ink: #00ff00;
+  --muted: #009900;
+  --border: #003300;
+  --link: #33ff33;
+  --visited: #33ff33;
+  --code-bg: #001100;
+  --stripe: #001a00;
+  --accent: #33ff33;
+}
+
 
 * {
   box-sizing: border-box;
@@ -92,7 +152,7 @@ th {
 }
 
 tr:nth-child(even) td {
-  background: #f9f9f9;
+  background: var(--stripe);
 }
 
 /* Layout shell */
@@ -131,8 +191,8 @@ tr:nth-child(even) td {
 .brand-mark {
   padding: 0.1rem 0.3rem;
   border: 1px solid var(--border);
-  background: #efefef;
-  color: var(--link);
+  background: var(--panel);
+  color: var(--accent);
   font-size: 0.85rem;
   font-weight: 700;
 }
@@ -146,12 +206,18 @@ tr:nth-child(even) td {
 .brand-text strong {
   font-size: 1.3rem;
   line-height: 1.1;
-  color: var(--link);
+  color: var(--accent);
 }
 
 .brand-text small {
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
 }
 
 .top-nav {
@@ -173,6 +239,18 @@ tr:nth-child(even) td {
   color: var(--ink);
   font-weight: 700;
   text-decoration: none;
+}
+
+/* Theme picker */
+
+.theme-picker {
+  width: auto;
+  padding: 0.1rem 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 0.8rem var(--sans);
 }
 
 /* Breadcrumbs */
@@ -222,14 +300,14 @@ tr:nth-child(even) td {
 
 .doc-content code {
   padding: 0.05rem 0.2rem;
-  background: #f3f3f3;
+  background: var(--code-bg);
 }
 
 .doc-content pre {
   overflow-x: auto;
   padding: 0.4rem 0.5rem;
   border: 1px solid var(--border);
-  background: #f7f7f7;
+  background: var(--code-bg);
   color: var(--ink);
 }
 
@@ -241,8 +319,8 @@ tr:nth-child(even) td {
 .doc-content blockquote {
   padding: 0.3rem 0.5rem;
   border-left: 3px solid var(--border);
-  background: #f8f8f8;
-  color: #444444;
+  background: var(--panel);
+  color: var(--ink);
 }
 
 /* Related */
@@ -295,15 +373,15 @@ tr:nth-child(even) td {
 input, select {
   width: 100%;
   padding: 0.2rem 0.3rem;
-  border: 1px solid #999999;
+  border: 1px solid var(--border);
   border-radius: 0;
-  background: #ffffff;
+  background: var(--bg);
   color: var(--ink);
   font: 16px var(--sans);
 }
 
 input:focus, select:focus {
-  outline: 1px dotted #000000;
+  outline: 1px dotted var(--ink);
   outline-offset: 1px;
 }
 
@@ -333,7 +411,7 @@ input:focus, select:focus {
     display: block;
   }
 
-  .top-nav {
+  .header-right {
     margin-top: 0.3rem;
   }
 

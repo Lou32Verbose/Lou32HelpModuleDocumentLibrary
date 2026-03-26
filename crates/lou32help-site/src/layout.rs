@@ -28,6 +28,7 @@ pub(crate) fn layout(
                 meta http-equiv="Content-Security-Policy" content=(CONTENT_SECURITY_POLICY);
                 link rel="canonical" href=(canonical_url);
                 link rel="stylesheet" href="/assets/styles.css";
+                script src="/assets/theme.js" {}
             }
             body {
                 div.page-shell {
@@ -39,11 +40,21 @@ pub(crate) fn layout(
                                 small { (view.config().site.tagline.as_str()) }
                             }
                         }
-                        nav.top-nav {
-                            a href="/" class=(nav_class(active_nav, "home")) { "Home" }
-                            a href="/search/" class=(nav_class(active_nav, "search")) { "Search" }
-                            a href="/topics/" class=(nav_class(active_nav, "topics")) { "Topics" }
-                            a href="/tags/" class=(nav_class(active_nav, "tags")) { "Tags" }
+                        div.header-right {
+                            nav.top-nav {
+                                a href="/" class=(nav_class(active_nav, "home")) { "Home" }
+                                a href="/search/" class=(nav_class(active_nav, "search")) { "Search" }
+                                a href="/topics/" class=(nav_class(active_nav, "topics")) { "Topics" }
+                                a href="/tags/" class=(nav_class(active_nav, "tags")) { "Tags" }
+                            }
+                            select id="theme-picker" class="theme-picker" {
+                                option value="" { "Default" }
+                                option value="dark" { "Dark" }
+                                option value="enterprise" { "Enterprise 2004" }
+                                option value="geocities" { "Geocities" }
+                                option value="terminal" { "Terminal" }
+    
+                            }
                         }
                     }
                     main.page-main {

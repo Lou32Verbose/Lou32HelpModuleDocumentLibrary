@@ -51,6 +51,8 @@ pub fn build_site_from_view(
 
     fs::write(assets_dir.join("styles.css"), styles_css())?;
     debug!("wrote styles.css");
+    fs::write(assets_dir.join("theme.js"), theme_js())?;
+    debug!("wrote theme.js");
     fs::write(
         assets_dir.join("search.js"),
         search_app_js(
@@ -288,6 +290,10 @@ fn path_segments(path: &str) -> Vec<&str> {
 
 fn styles_css() -> &'static str {
     include_str!("assets/styles.css")
+}
+
+fn theme_js() -> &'static str {
+    include_str!("assets/theme.js")
 }
 
 fn search_app_js(module_name: &str, min_query_length: usize, max_results: usize) -> String {
