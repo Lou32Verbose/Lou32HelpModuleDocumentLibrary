@@ -4,6 +4,7 @@ use crate::projection;
 use crate::search::{SearchIndex, SearchQuery, SearchResult, build_search_index, search_index};
 use crate::validation::{ValidationIssue, ValidationMode, validate_workspace};
 use anyhow::{Context, Result};
+use rayon::iter::{ParallelBridge, ParallelIterator};
 use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
@@ -62,7 +63,7 @@ impl Workspace {
         let config = Lou32HelpConfig::load_from(&root)?;
         let content_dir = config.content_dir(&root);
 
-        let mut documents = WalkDir::new(&content_dir)
+        let paths: Vec<PathBuf> = WalkDir::new(&content_dir)
             .into_iter()
             .filter_map(std::result::Result::ok)
             .filter(|entry| entry.file_type().is_file())
@@ -73,7 +74,13 @@ impl Workspace {
                     .map(|ext| ext.eq_ignore_ascii_case("md"))
                     .unwrap_or(false)
             })
-            .map(|entry| Document::from_file(entry.path()))
+            .map(|entry| entry.into_path())
+            .collect();
+
+        let mut documents = paths
+            .into_iter()
+            .par_bridge()
+            .map(|path| Document::from_file(&path))
             .collect::<Result<Vec<_>, _>>()
             .with_context(|| format!("failed to load documents from {}", content_dir.display()))?;
 
@@ -95,7 +102,7 @@ impl Workspace {
         let topic_nodes = projection::topic_nodes(&self.config, &documents);
         let topic_documents = projection::topic_documents(&documents);
         let tag_index = projection::tag_index(&documents);
-        let recent_documents = projection::recent_documents(documents.clone());
+        let recent_documents = projection::recent_documents(&documents);
         let top_level_topics_with_counts =
             projection::top_level_topics_with_counts(&self.config, &documents);
         let platforms = projection::platforms(&documents);

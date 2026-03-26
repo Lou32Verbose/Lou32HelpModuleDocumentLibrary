@@ -7,6 +7,7 @@ use lou32help_core::{
     Workspace, WorkspaceView, build_browser_search_index, slug_to_output_path,
     validate_output_relative_path,
 };
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::fs;
 use std::path::{Path, PathBuf};
 use tracing::debug;
@@ -101,39 +102,53 @@ pub fn build_site_from_view(
     )?;
     page_count += 1;
 
-    for topic in view.topic_nodes().values() {
-        let page_path = format!("/topics/{}/", topic.path);
-        let path = safe_output_path(
-            out_dir,
-            &PathBuf::from("topics").join(&topic.path).join("index.html"),
-        )?;
-        write_page(
-            &path,
-            &page_path,
-            render_topic_page(view, topic).into_string(),
-        )?;
-        debug!(topic = %topic.path, "wrote topic page");
-        page_count += 1;
-    }
+    let topic_pages: Vec<_> = view
+        .topic_nodes()
+        .values()
+        .map(|topic| {
+            let page_path = format!("/topics/{}/", topic.path);
+            let out = safe_output_path(
+                out_dir,
+                &PathBuf::from("topics").join(&topic.path).join("index.html"),
+            )?;
+            Ok((out, page_path, render_topic_page(view, topic).into_string()))
+        })
+        .collect::<Result<Vec<_>>>()?;
 
-    for tag in view.tag_index().keys() {
-        let page_path = format!("/tags/{tag}/");
-        let path = safe_output_path(out_dir, &PathBuf::from("tags").join(tag).join("index.html"))?;
-        write_page(&path, &page_path, render_tag_page(view, tag).into_string())?;
-        debug!(tag = %tag, "wrote tag page");
-        page_count += 1;
-    }
+    let tag_pages: Vec<_> = view
+        .tag_index()
+        .keys()
+        .map(|tag| {
+            let page_path = format!("/tags/{tag}/");
+            let out = safe_output_path(out_dir, &PathBuf::from("tags").join(tag).join("index.html"))?;
+            Ok((out, page_path, render_tag_page(view, tag).into_string()))
+        })
+        .collect::<Result<Vec<_>>>()?;
 
-    for doc in view.documents() {
-        let path = safe_output_path(out_dir, &slug_to_output_path(&doc.metadata.slug))?;
-        write_page(
-            &path,
-            &doc.metadata.slug,
-            render_document_page(view, doc).into_string(),
-        )?;
-        debug!(slug = %doc.metadata.slug, "wrote document page");
-        page_count += 1;
-    }
+    let doc_pages: Vec<_> = view
+        .documents()
+        .iter()
+        .map(|doc| {
+            let out = safe_output_path(out_dir, &slug_to_output_path(&doc.metadata.slug))?;
+            Ok((out, doc.metadata.slug.clone(), render_document_page(view, doc).into_string()))
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    let all_pages: Vec<_> = topic_pages
+        .into_iter()
+        .chain(tag_pages)
+        .chain(doc_pages)
+        .collect();
+
+    page_count += all_pages.len();
+
+    all_pages
+        .into_par_iter()
+        .try_for_each(|(path, page_path, contents)| {
+            write_page(&path, &page_path, contents)?;
+            debug!(page = %page_path, "wrote page");
+            Ok::<_, anyhow::Error>(())
+        })?;
 
     Ok(BuildReport {
         page_count,
@@ -263,13 +278,10 @@ fn relative_path_between(from_file: &str, to_file: &str) -> String {
         common += 1;
     }
 
-    let mut parts = Vec::new();
-    for _ in common..from_dir.len() {
-        parts.push("..".to_string());
-    }
-    for segment in &to_segments[common..] {
-        parts.push((*segment).to_string());
-    }
+    let ups = from_dir.len() - common;
+    let mut parts: Vec<&str> = Vec::with_capacity(ups + to_segments.len() - common);
+    parts.extend(std::iter::repeat_n("..", ups));
+    parts.extend(&to_segments[common..]);
 
     if parts.is_empty() {
         to_segments

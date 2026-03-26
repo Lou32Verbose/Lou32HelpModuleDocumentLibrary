@@ -251,15 +251,16 @@ pub fn tag_index<'a>(docs: &[&'a Document]) -> BTreeMap<String, Vec<&'a Document
     tags
 }
 
-pub fn recent_documents(mut docs: Vec<&Document>) -> Vec<&Document> {
-    docs.sort_by(|left, right| {
+pub fn recent_documents<'a>(docs: &[&'a Document]) -> Vec<&'a Document> {
+    let mut sorted: Vec<&Document> = docs.to_vec();
+    sorted.sort_by(|left, right| {
         right
             .metadata
             .updated
             .cmp(&left.metadata.updated)
             .then_with(|| left.metadata.title.cmp(&right.metadata.title))
     });
-    docs
+    sorted
 }
 
 pub fn top_level_topics_with_counts<'a>(
@@ -288,4 +289,180 @@ pub fn platforms(docs: &[&Document]) -> Vec<String> {
     platforms.sort();
     platforms.dedup();
     platforms
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::document::{DocStatus, DocumentMetadata, PageType};
+    use chrono::NaiveDate;
+    use std::path::PathBuf;
+
+    fn make_doc(slug: &str, topic: &str, tags: &[&str], status: DocStatus) -> Document {
+        make_doc_full(slug, slug, topic, tags, &[], &[], &[], status, "2026-03-20")
+    }
+
+    fn make_doc_full(
+        slug: &str,
+        title: &str,
+        topic: &str,
+        tags: &[&str],
+        aliases: &[&str],
+        platforms: &[&str],
+        related: &[&str],
+        status: DocStatus,
+        updated: &str,
+    ) -> Document {
+        Document {
+            source_path: PathBuf::from(format!("{slug}.md")),
+            metadata: DocumentMetadata {
+                title: title.to_string(),
+                slug: slug.to_string(),
+                summary: format!("Summary for {title}"),
+                topic: topic.to_string(),
+                page_type: PageType::Reference,
+                tags: tags.iter().map(|s| s.to_string()).collect(),
+                aliases: aliases.iter().map(|s| s.to_string()).collect(),
+                platforms: platforms.iter().map(|s| s.to_string()).collect(),
+                related: related.iter().map(|s| s.to_string()).collect(),
+                status,
+                updated: NaiveDate::parse_from_str(updated, "%Y-%m-%d").unwrap(),
+            },
+            body: "Body text.".to_string(),
+            headings: vec!["Heading".to_string()],
+            path_issues: vec![],
+        }
+    }
+
+    #[test]
+    fn visible_documents_filters_drafts() {
+        let published = make_doc("/a/", "topic", &[], DocStatus::Published);
+        let draft = make_doc("/b/", "topic", &[], DocStatus::Draft);
+        let all = vec![published, draft];
+
+        let no_drafts = visible_documents(&all, false);
+        assert_eq!(no_drafts.len(), 1);
+        assert_eq!(no_drafts[0].metadata.slug, "/a/");
+
+        let with_drafts = visible_documents(&all, true);
+        assert_eq!(with_drafts.len(), 2);
+    }
+
+    #[test]
+    fn slug_index_maps_correctly() {
+        let doc_a = make_doc("/alpha/", "topic", &[], DocStatus::Published);
+        let doc_b = make_doc("/beta/", "topic", &[], DocStatus::Published);
+        let docs = vec![&doc_a, &doc_b];
+
+        let index = slug_index(&docs);
+        assert_eq!(index.len(), 2);
+        assert_eq!(index["/alpha/"].metadata.title, "/alpha/");
+        assert_eq!(index["/beta/"].metadata.title, "/beta/");
+        assert!(index.get("/gamma/").is_none());
+    }
+
+    #[test]
+    fn alias_index_handles_multiple_aliases() {
+        let doc = make_doc_full(
+            "/tool/",
+            "Tool",
+            "topic",
+            &[],
+            &["alias-one", "alias-two"],
+            &[],
+            &[],
+            DocStatus::Published,
+            "2026-03-20",
+        );
+        let docs = vec![&doc];
+
+        let index = alias_index(&docs);
+        assert_eq!(index.len(), 2);
+        assert_eq!(index["alias-one"].metadata.slug, "/tool/");
+        assert_eq!(index["alias-two"].metadata.slug, "/tool/");
+    }
+
+    #[test]
+    fn tag_index_groups_and_sorts() {
+        let doc_a = make_doc("/a/", "topic", &["networking", "powershell"], DocStatus::Published);
+        let doc_b = make_doc("/b/", "topic", &["networking"], DocStatus::Published);
+        let doc_c = make_doc("/c/", "topic", &["security"], DocStatus::Published);
+        let docs = vec![&doc_a, &doc_b, &doc_c];
+
+        let index = tag_index(&docs);
+        assert_eq!(index.len(), 3);
+        assert_eq!(index["networking"].len(), 2);
+        assert_eq!(index["powershell"].len(), 1);
+        assert_eq!(index["security"].len(), 1);
+        // Documents within a tag are sorted by slug.
+        assert_eq!(index["networking"][0].metadata.slug, "/a/");
+        assert_eq!(index["networking"][1].metadata.slug, "/b/");
+    }
+
+    #[test]
+    fn recent_documents_sorts_by_updated() {
+        let old = make_doc_full("/old/", "Old", "topic", &[], &[], &[], &[], DocStatus::Published, "2025-01-01");
+        let new = make_doc_full("/new/", "New", "topic", &[], &[], &[], &[], DocStatus::Published, "2026-03-20");
+        let mid = make_doc_full("/mid/", "Mid", "topic", &[], &[], &[], &[], DocStatus::Published, "2025-06-15");
+        let docs = vec![&old, &new, &mid];
+
+        let recent = recent_documents(&docs);
+        assert_eq!(recent[0].metadata.slug, "/new/");
+        assert_eq!(recent[1].metadata.slug, "/mid/");
+        assert_eq!(recent[2].metadata.slug, "/old/");
+    }
+
+    fn test_config() -> Lou32HelpConfig {
+        let toml_str = lou32help_test_fixtures::default_config_toml();
+        toml::from_str(toml_str).unwrap()
+    }
+
+    #[test]
+    fn topic_nodes_builds_hierarchy() {
+        let config = test_config();
+
+        let doc = make_doc("/bits/", "powershell/networking", &[], DocStatus::Published);
+        let docs = vec![&doc];
+
+        let nodes = topic_nodes(&config, &docs);
+        // Should have both "powershell" and "powershell/networking" nodes.
+        assert!(nodes.contains_key("powershell"));
+        assert!(nodes.contains_key("powershell/networking"));
+
+        let parent = &nodes["powershell"];
+        assert_eq!(parent.title, "PowerShell");
+        assert!(parent.parent.is_none());
+        assert!(parent.children.contains(&"powershell/networking".to_string()));
+
+        let child = &nodes["powershell/networking"];
+        assert_eq!(child.parent.as_deref(), Some("powershell"));
+        assert!(child.documents.contains(&"/bits/".to_string()));
+    }
+
+    #[test]
+    fn computed_related_scores_by_topic_and_tags() {
+        let doc_a = make_doc_full(
+            "/a/", "A", "powershell/networking",
+            &["networking", "bits"], &[], &["windows"], &[],
+            DocStatus::Published, "2026-03-20",
+        );
+        let doc_b = make_doc_full(
+            "/b/", "B", "powershell/networking",
+            &["networking"], &[], &["windows"], &[],
+            DocStatus::Published, "2026-03-20",
+        );
+        let doc_c = make_doc_full(
+            "/c/", "C", "cli-tools/wget",
+            &["wget"], &[], &["linux"], &[],
+            DocStatus::Published, "2026-03-20",
+        );
+        let docs = vec![&doc_a, &doc_b, &doc_c];
+
+        // For doc_a, doc_b should rank higher (same topic + shared tags + shared platform).
+        let related = computed_related(&docs, &doc_a, 10);
+        assert!(!related.is_empty());
+        assert_eq!(related[0].metadata.slug, "/b/");
+        // doc_c has no shared topic or tags with doc_a, so it should not appear.
+        assert!(related.iter().all(|d| d.metadata.slug != "/c/"));
+    }
 }
