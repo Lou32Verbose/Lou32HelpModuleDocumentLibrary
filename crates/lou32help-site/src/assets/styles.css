@@ -9,8 +9,32 @@
   --code-bg: #f3f3f3;
   --stripe: #f9f9f9;
   --accent: #0000ee;
+  --hover: #0000cc;
+  --tag-bg: #e8e8e8;
+  --tag-ink: #333333;
+  --focus-ring: #0000ee;
   --sans: "Segoe UI", Arial, Helvetica, sans-serif;
   --mono: "Courier New", Courier, monospace;
+}
+
+/* Auto dark — follows OS preference when no theme is saved */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #000000;
+    --panel: #111111;
+    --ink: #ffffff;
+    --muted: #aaaaaa;
+    --border: #333333;
+    --link: #00ccff;
+    --visited: #9999ff;
+    --code-bg: #111111;
+    --stripe: #0a0a0a;
+    --accent: #00ccff;
+    --hover: #33ddff;
+    --tag-bg: #222222;
+    --tag-ink: #cccccc;
+    --focus-ring: #00ccff;
+  }
 }
 
 /* Dark — pure black, white text, cyan links */
@@ -25,6 +49,10 @@
   --code-bg: #111111;
   --stripe: #0a0a0a;
   --accent: #00ccff;
+  --hover: #33ddff;
+  --tag-bg: #222222;
+  --tag-ink: #cccccc;
+  --focus-ring: #00ccff;
 }
 
 /* Enterprise 2004 — Windows XP/Server 2003 admin console */
@@ -39,6 +67,10 @@
   --code-bg: #ffffff;
   --stripe: #e4e0d0;
   --accent: #003399;
+  --hover: #002266;
+  --tag-bg: #c8c4b4;
+  --tag-ink: #000000;
+  --focus-ring: #003399;
 }
 
 /* Geocities — late-90s web, navy bg, neon text */
@@ -53,6 +85,10 @@
   --code-bg: #000066;
   --stripe: #00006b;
   --accent: #ff00ff;
+  --hover: #ff33ff;
+  --tag-bg: #000066;
+  --tag-ink: #00ff00;
+  --focus-ring: #ff00ff;
 }
 
 /* Terminal — green phosphor CRT */
@@ -67,6 +103,100 @@
   --code-bg: #001100;
   --stripe: #001a00;
   --accent: #33ff33;
+  --hover: #66ff66;
+  --tag-bg: #002200;
+  --tag-ink: #00ff00;
+  --focus-ring: #33ff33;
+}
+
+/* Solarized — warm beige, muted tones */
+[data-theme="solarized"] {
+  --bg: #fdf6e3;
+  --panel: #eee8d5;
+  --ink: #657b83;
+  --muted: #93a1a1;
+  --border: #d3cbab;
+  --link: #268bd2;
+  --visited: #6c71c4;
+  --code-bg: #eee8d5;
+  --stripe: #f5efdc;
+  --accent: #268bd2;
+  --hover: #2aa198;
+  --tag-bg: #eee8d5;
+  --tag-ink: #586e75;
+  --focus-ring: #268bd2;
+}
+
+/* High Contrast — accessibility-first, yellow on black */
+[data-theme="high-contrast"] {
+  --bg: #000000;
+  --panel: #1a1a1a;
+  --ink: #ffffff;
+  --muted: #ffff00;
+  --border: #ffffff;
+  --link: #ffff00;
+  --visited: #ffff00;
+  --code-bg: #1a1a1a;
+  --stripe: #0d0d0d;
+  --accent: #ffff00;
+  --hover: #00ffff;
+  --tag-bg: #333333;
+  --tag-ink: #ffff00;
+  --focus-ring: #ffff00;
+}
+
+/* Blueprint — engineering blueprint paper */
+[data-theme="blueprint"] {
+  --bg: #0a1628;
+  --panel: #0f1f3d;
+  --ink: #c8d8e8;
+  --muted: #6889a8;
+  --border: #1e3a5f;
+  --link: #5dade2;
+  --visited: #85c1e9;
+  --code-bg: #0f1f3d;
+  --stripe: #0d1a30;
+  --accent: #5dade2;
+  --hover: #85c1e9;
+  --tag-bg: #1e3a5f;
+  --tag-ink: #c8d8e8;
+  --focus-ring: #5dade2;
+}
+
+/* Paper — warm off-white, sepia tones */
+[data-theme="paper"] {
+  --bg: #faf8f5;
+  --panel: #f0ece6;
+  --ink: #2c2c2c;
+  --muted: #7a7568;
+  --border: #d5cfc5;
+  --link: #8b4513;
+  --visited: #6b3410;
+  --code-bg: #f0ece6;
+  --stripe: #f5f1ec;
+  --accent: #8b4513;
+  --hover: #a0522d;
+  --tag-bg: #e8e2d8;
+  --tag-ink: #4a4540;
+  --focus-ring: #8b4513;
+}
+
+/* Nord — arctic color palette */
+[data-theme="nord"] {
+  --bg: #2e3440;
+  --panel: #3b4252;
+  --ink: #d8dee9;
+  --muted: #7b88a1;
+  --border: #4c566a;
+  --link: #88c0d0;
+  --visited: #b48ead;
+  --code-bg: #3b4252;
+  --stripe: #333a47;
+  --accent: #88c0d0;
+  --hover: #8fbcbb;
+  --tag-bg: #434c5e;
+  --tag-ink: #d8dee9;
+  --focus-ring: #88c0d0;
 }
 
 
@@ -85,6 +215,7 @@ body {
   font-family: var(--sans);
   font-size: 16px;
   line-height: 1.4;
+  transition: background-color 0.15s, color 0.15s;
 }
 
 a {
@@ -93,6 +224,10 @@ a {
 
 a:visited {
   color: var(--visited);
+}
+
+a:hover {
+  color: var(--hover);
 }
 
 code,
@@ -149,6 +284,7 @@ th, td {
 th {
   background: var(--panel);
   font-weight: 700;
+  border-bottom: 2px solid var(--border);
 }
 
 tr:nth-child(even) td {
@@ -275,6 +411,26 @@ tr:nth-child(even) td {
   color: var(--muted);
 }
 
+/* Tag and platform pills */
+
+.tag, .platform {
+  display: inline-block;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--border);
+  background: var(--tag-bg);
+  color: var(--tag-ink);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.tag:visited, .platform:visited {
+  color: var(--tag-ink);
+}
+
+.tag:hover, .platform:hover {
+  color: var(--hover);
+}
+
 /* Document page */
 
 .doc-page {
@@ -381,7 +537,7 @@ input, select {
 }
 
 input:focus, select:focus {
-  outline: 1px dotted var(--ink);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 

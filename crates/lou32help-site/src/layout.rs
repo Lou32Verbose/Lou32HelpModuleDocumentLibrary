@@ -48,12 +48,16 @@ pub(crate) fn layout(
                                 a href="/tags/" class=(nav_class(active_nav, "tags")) { "Tags" }
                             }
                             select id="theme-picker" class="theme-picker" {
-                                option value="" { "Default" }
+                                option value="" { "Auto" }
                                 option value="dark" { "Dark" }
                                 option value="enterprise" { "Enterprise 2004" }
                                 option value="geocities" { "Geocities" }
                                 option value="terminal" { "Terminal" }
-    
+                                option value="solarized" { "Solarized" }
+                                option value="high-contrast" { "High Contrast" }
+                                option value="blueprint" { "Blueprint" }
+                                option value="nord" { "Nord" }
+                                option value="paper" { "Paper" }
                             }
                         }
                     }

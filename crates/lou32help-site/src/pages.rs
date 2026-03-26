@@ -283,18 +283,18 @@ pub(crate) fn render_document_page(view: &WorkspaceView<'_>, doc: &Document) -> 
                     @if !doc.metadata.platforms.is_empty() {
                         p.muted {
                             "Platforms: "
-                            @for (i, platform) in doc.metadata.platforms.iter().enumerate() {
-                                @if i > 0 { ", " }
-                                a href=(format!("/search/?platform={platform}")) { (platform) }
+                            @for platform in &doc.metadata.platforms {
+                                a.platform href=(format!("/search/?platform={platform}")) { (platform) }
+                                " "
                             }
                         }
                     }
                     @if !doc.metadata.tags.is_empty() {
                         p.muted {
                             "Tags: "
-                            @for (i, tag) in doc.metadata.tags.iter().enumerate() {
-                                @if i > 0 { ", " }
-                                a href=(format!("/tags/{tag}/")) { (tag) }
+                            @for tag in &doc.metadata.tags {
+                                a.tag href=(format!("/tags/{tag}/")) { (tag) }
+                                " "
                             }
                         }
                     }
