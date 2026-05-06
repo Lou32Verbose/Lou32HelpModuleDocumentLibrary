@@ -1,0 +1,815 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="PowerShell Query Patterns Reference - A practical guide to querying objects using common pipeline patterns.">
+<title>LOU32HELP - PowerShell Query Patterns Reference</title>
+<style>
+body { font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.5; color: #000; background: #fff; max-width: 800px; margin: 0 auto; padding: 20px; }
+h1 { font-size: 22px; color: #003366; border-bottom: 2px solid #003366; padding-bottom: 6px; margin-top: 0; }
+h2 { font-size: 18px; color: #003366; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-top: 28px; }
+h3 { font-size: 15px; color: #333; margin-top: 18px; }
+p { margin: 8px 0; }
+pre { background: #f4f4f4; border: 1px solid #ccc; padding: 10px; font-family: "Courier New", Courier, monospace; font-size: 13px; overflow-x: auto; white-space: pre; margin: 8px 0; }
+code { font-family: "Courier New", Courier, monospace; font-size: 13px; background: #f0f0f0; padding: 1px 4px; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; margin: 10px 0; }
+th, td { border: 1px solid #999; padding: 4px 10px; text-align: left; font-size: 13px; }
+th { background: #e8e8e8; }
+hr { border: none; border-top: 1px solid #ccc; margin: 24px 0; }
+a { color: #003366; }
+ol, ul { margin: 6px 0; padding-left: 28px; }
+li { margin: 2px 0; }
+.nav { background: #f4f4f4; border: 1px solid #ccc; padding: 10px 16px; margin-bottom: 20px; font-size: 13px; }
+.nav a { margin-right: 6px; }
+.footer { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 12px; color: #666; }
+</style>
+</head>
+<body>
+<h1>LOU32HELP &mdash; PowerShell Query Patterns Reference</h1>
+<p>A practical reference for querying objects in PowerShell using common pipeline patterns.</p>
+<div class="nav"><strong>Contents:</strong><br>
+<a href="#1-the-pipeline">1. The Pipeline</a><br>
+<a href="#2-inspect-object-properties">2. Inspect Object Properties</a><br>
+<a href="#3-filtering-with-whereobject">3. Filtering with `Where-Object`</a><br>
+<a href="#4-common-comparison-operators">4. Common Comparison Operators</a><br>
+<a href="#5-wildcard-filtering-with-like">5. Wildcard Filtering with `-like`</a><br>
+<a href="#6-regex-filtering-with-match">6. Regex Filtering with `-match`</a><br>
+<a href="#7-selecting-properties-with-selectobject">7. Selecting Properties with `Select-Object`</a><br>
+<a href="#8-expanding-a-single-property">8. Expanding a Single Property</a><br>
+<a href="#9-sorting-with-sortobject">9. Sorting with `Sort-Object`</a><br>
+<a href="#10-grouping-with-groupobject">10. Grouping with `Group-Object`</a><br>
+<a href="#11-formatting-output">11. Formatting Output</a><br>
+<a href="#12-exporting-to-csv">12. Exporting to CSV</a><br>
+<a href="#13-exporting-to-json">13. Exporting to JSON</a><br>
+<a href="#14-calculated-properties">14. Calculated Properties</a><br>
+<a href="#15-combining-multiple-conditions">15. Combining Multiple Conditions</a><br>
+<a href="#16-finding-top-results">16. Finding Top Results</a><br>
+<a href="#17-searching-files">17. Searching Files</a><br>
+<a href="#18-querying-services">18. Querying Services</a><br>
+<a href="#19-querying-processes">19. Querying Processes</a><br>
+<a href="#20-querying-network-connections">20. Querying Network Connections</a><br>
+<a href="#21-querying-installed-packages">21. Querying Installed Packages</a><br>
+<a href="#22-the-most-reusable-pattern">22. The Most Reusable Pattern</a><br>
+<a href="#23-quick-reference-cheatsheet">23. Quick Reference Cheatsheet</a><br>
+<a href="#24-practical-troubleshooting-tips">24. Practical Troubleshooting Tips</a><br>
+<a href="#25-suggested-practice-commands">25. Suggested Practice Commands</a><br>
+<a href="#summary">Summary</a><br>
+</div>
+<h2 id="1-the-pipeline">1. The Pipeline</h2>
+<p>The pipeline operator <code>|</code> sends the output of one command into the next command.</p>
+<pre><code>
+Get-Service | Select-Object Name, Status
+</code></pre>
+<p>This means:</p>
+<ol>
+<li>Get all services.</li>
+<li>Send them to <code>Select-Object</code>.</li>
+<li>Display only the <code>Name</code> and <code>Status</code> properties.</li>
+</ol>
+<p>Multi-line formatting is often easier to read:</p>
+<pre><code>
+Get-Service |
+    Select-Object Name, Status
+</code></pre>
+<hr>
+<h2 id="2-inspect-object-properties">2. Inspect Object Properties</h2>
+<p>Before filtering or selecting, inspect what properties are available.</p>
+<pre><code>
+Get-Service | Get-Member
+</code></pre>
+<p>Shorter alias:</p>
+<pre><code>
+Get-Service | gm
+</code></pre>
+<p>Example with processes:</p>
+<pre><code>
+Get-Process | Get-Member
+</code></pre>
+<p>To see all properties for one object:</p>
+<pre><code>
+Get-Service |
+    Select-Object -First 1 *
+</code></pre>
+<p>Or format the first object as a list:</p>
+<pre><code>
+Get-Service |
+    Select-Object -First 1 |
+    Format-List *
+</code></pre>
+<hr>
+<h2 id="3-filtering-with-whereobject">3. Filtering with <code>Where-Object</code></h2>
+<p>Use <code>Where-Object</code> to keep only objects that match a condition.</p>
+<p>Long form:</p>
+<pre><code>
+Get-Service |
+    Where-Object { $_.Status -eq 'Running' }
+</code></pre>
+<p>Short form:</p>
+<pre><code>
+Get-Service |
+    Where-Object Status -eq 'Running'
+</code></pre>
+<p><code>$_</code> means "the current object in the pipeline."</p>
+<hr>
+<h2 id="4-common-comparison-operators">4. Common Comparison Operators</h2>
+<table>
+<tr><th>Operator</th><th>Meaning</th></tr>
+<tr><td><code>-eq</code></td><td>Equals</td></tr>
+<tr><td><code>-ne</code></td><td>Not equals</td></tr>
+<tr><td><code>-gt</code></td><td>Greater than</td></tr>
+<tr><td><code>-ge</code></td><td>Greater than or equal</td></tr>
+<tr><td><code>-lt</code></td><td>Less than</td></tr>
+<tr><td><code>-le</code></td><td>Less than or equal</td></tr>
+<tr><td><code>-like</code></td><td>Wildcard match</td></tr>
+<tr><td><code>-notlike</code></td><td>Wildcard does not match</td></tr>
+<tr><td><code>-match</code></td><td>Regex match</td></tr>
+<tr><td><code>-notmatch</code></td><td>Regex does not match</td></tr>
+<tr><td><code>-in</code></td><td>Value is in a collection</td></tr>
+<tr><td><code>-notin</code></td><td>Value is not in a collection</td></tr>
+<tr><td><code>-contains</code></td><td>Collection contains value</td></tr>
+<tr><td><code>-notcontains</code></td><td>Collection does not contain value</td></tr>
+</table>
+<p>Example:</p>
+<pre><code>
+Get-Process |
+    Where-Object CPU -gt 10
+</code></pre>
+<hr>
+<h2 id="5-wildcard-filtering-with-like">5. Wildcard Filtering with <code>-like</code></h2>
+<p>Use <code>-like</code> when you want simple wildcard matching.</p>
+<table>
+<tr><th>Pattern</th><th>Meaning</th></tr>
+<tr><td><code>abc*</code></td><td>Starts with <code>abc</code></td></tr>
+<tr><td><code>*abc</code></td><td>Ends with <code>abc</code></td></tr>
+<tr><td><code>*abc*</code></td><td>Contains <code>abc</code></td></tr>
+<tr><td><code>a?c</code></td><td>Matches <code>abc</code>, <code>axc</code>, etc.</td></tr>
+</table>
+<p>Example: services starting with <code>Win</code></p>
+<pre><code>
+Get-Service |
+    Where-Object Name -like 'Win*'
+</code></pre>
+<p>Example: packages with IDs starting with <code>MSIX/</code></p>
+<pre><code>
+Get-WingetPackage |
+    Where-Object Id -like 'MSIX/*'
+</code></pre>
+<p>Example: processes containing <code>edge</code></p>
+<pre><code>
+Get-Process |
+    Where-Object ProcessName -like '*edge*'
+</code></pre>
+<hr>
+<h2 id="6-regex-filtering-with-match">6. Regex Filtering with <code>-match</code></h2>
+<p>Use <code>-match</code> for regular expressions.</p>
+<p>Example: names starting with <code>Win</code></p>
+<pre><code>
+Get-Service |
+    Where-Object Name -match '^Win'
+</code></pre>
+<p>Example: names ending with <code>Svc</code></p>
+<pre><code>
+Get-Service |
+    Where-Object Name -match 'Svc$'
+</code></pre>
+<p>Example: package IDs starting with <code>MSIX/</code></p>
+<pre><code>
+Get-WingetPackage |
+    Where-Object Id -match '^MSIX/'
+</code></pre>
+<p>Regex anchors:</p>
+<table>
+<tr><th>Regex</th><th>Meaning</th></tr>
+<tr><td><code>^</code></td><td>Start of string</td></tr>
+<tr><td><code>$</code></td><td>End of string</td></tr>
+<tr><td><code>.</code></td><td>Any single character</td></tr>
+<tr><td><code>.*</code></td><td>Any number of characters</td></tr>
+<tr><td><code>\d</code></td><td>Digit</td></tr>
+<tr><td><code>\w</code></td><td>Word character</td></tr>
+</table>
+<hr>
+<h2 id="7-selecting-properties-with-selectobject">7. Selecting Properties with <code>Select-Object</code></h2>
+<p>Use <code>Select-Object</code> to choose which properties to display.</p>
+<pre><code>
+Get-Service |
+    Select-Object Name, DisplayName, Status
+</code></pre>
+<p>Example:</p>
+<pre><code>
+Get-Process |
+    Select-Object Name, Id, CPU, WorkingSet64
+</code></pre>
+<p>Select the first 10 objects:</p>
+<pre><code>
+Get-Process |
+    Select-Object -First 10
+</code></pre>
+<p>Select the last 10 objects:</p>
+<pre><code>
+Get-Process |
+    Select-Object -Last 10
+</code></pre>
+<p>Skip the first 5 objects:</p>
+<pre><code>
+Get-Process |
+    Select-Object -Skip 5
+</code></pre>
+<hr>
+<h2 id="8-expanding-a-single-property">8. Expanding a Single Property</h2>
+<p>By default, <code>Select-Object Name</code> returns objects with a <code>Name</code> property.</p>
+<pre><code>
+Get-Service |
+    Select-Object Name
+</code></pre>
+<p>Output shape:</p>
+<pre><code>
+Name
+----
+AarSvc
+AdobeARMservice
+AppIDSvc
+</code></pre>
+<p>If you only want the raw string values, use <code>-ExpandProperty</code>.</p>
+<pre><code>
+Get-Service |
+    Select-Object -ExpandProperty Name
+</code></pre>
+<p>Output shape:</p>
+<pre><code>
+AarSvc
+AdobeARMservice
+AppIDSvc
+</code></pre>
+<p>This is useful when passing property values to another command.</p>
+<p>Example:</p>
+<pre><code>
+Get-WingetPackage |
+    Where-Object Id -like 'MSIX/*' |
+    Select-Object -ExpandProperty Id
+</code></pre>
+<hr>
+<h2 id="9-sorting-with-sortobject">9. Sorting with <code>Sort-Object</code></h2>
+<p>Sort objects by a property.</p>
+<pre><code>
+Get-Service |
+    Sort-Object Name
+</code></pre>
+<p>Sort descending:</p>
+<pre><code>
+Get-Process |
+    Sort-Object CPU -Descending
+</code></pre>
+<p>Top 10 processes by CPU:</p>
+<pre><code>
+Get-Process |
+    Sort-Object CPU -Descending |
+    Select-Object -First 10 Name, Id, CPU
+</code></pre>
+<p>Sort by multiple properties:</p>
+<pre><code>
+Get-Service |
+    Sort-Object Status, Name
+</code></pre>
+<hr>
+<h2 id="10-grouping-with-groupobject">10. Grouping with <code>Group-Object</code></h2>
+<p>Use <code>Group-Object</code> to count objects by property value.</p>
+<p>Group services by status:</p>
+<pre><code>
+Get-Service |
+    Group-Object Status
+</code></pre>
+<p>Example output:</p>
+<pre><code>
+Count Name                      Group
+----- ----                      -----
+  142 Running                   {...}
+  120 Stopped                   {...}
+</code></pre>
+<p>Group processes by company:</p>
+<pre><code>
+Get-Process |
+    Group-Object Company
+</code></pre>
+<p>Group installed packages by source:</p>
+<pre><code>
+Get-WingetPackage |
+    Group-Object Source
+</code></pre>
+<p>Sort groups by count:</p>
+<pre><code>
+Get-Service |
+    Group-Object Status |
+    Sort-Object Count -Descending
+</code></pre>
+<hr>
+<h2 id="11-formatting-output">11. Formatting Output</h2>
+<p>PowerShell has formatting commands such as:</p>
+<table>
+<tr><th>Command</th><th>Purpose</th></tr>
+<tr><td><code>Format-Table</code></td><td>Display as a table</td></tr>
+<tr><td><code>Format-List</code></td><td>Display as a list</td></tr>
+<tr><td><code>Format-Wide</code></td><td>Display wide columns</td></tr>
+</table>
+<p>Example:</p>
+<pre><code>
+Get-Service |
+    Select-Object Name, Status |
+    Format-Table -AutoSize
+</code></pre>
+<p>Format as list:</p>
+<pre><code>
+Get-Service |
+    Select-Object -First 5 Name, DisplayName, Status |
+    Format-List
+</code></pre>
+<p>Important: formatting commands should usually be last.</p>
+<p>Good:</p>
+<pre><code>
+Get-Service |
+    Where-Object Status -eq 'Running' |
+    Select-Object Name, Status |
+    Format-Table -AutoSize
+</code></pre>
+<p>Avoid this:</p>
+<pre><code>
+Get-Service |
+    Format-Table |
+    Where-Object Status -eq 'Running'
+</code></pre>
+<p>Once data is formatted, it is no longer as useful for further object-based processing.</p>
+<hr>
+<h2 id="12-exporting-to-csv">12. Exporting to CSV</h2>
+<p>Use <code>Export-Csv</code> to save object data.</p>
+<pre><code>
+Get-Service |
+    Select-Object Name, DisplayName, Status |
+    Export-Csv "$env:USERPROFILE\Desktop\Services.csv" -NoTypeInformation
+</code></pre>
+<p>Export running services:</p>
+<pre><code>
+Get-Service |
+    Where-Object Status -eq 'Running' |
+    Select-Object Name, DisplayName, Status |
+    Export-Csv "$env:USERPROFILE\Desktop\RunningServices.csv" -NoTypeInformation
+</code></pre>
+<p>Open the CSV afterward:</p>
+<pre><code>
+Invoke-Item "$env:USERPROFILE\Desktop\RunningServices.csv"
+</code></pre>
+<hr>
+<h2 id="13-exporting-to-json">13. Exporting to JSON</h2>
+<p>Use <code>ConvertTo-Json</code> for structured data.</p>
+<pre><code>
+Get-Service |
+    Select-Object Name, DisplayName, Status |
+    ConvertTo-Json
+</code></pre>
+<p>Save JSON to a file:</p>
+<pre><code>
+Get-Service |
+    Select-Object Name, DisplayName, Status |
+    ConvertTo-Json |
+    Set-Content "$env:USERPROFILE\Desktop\Services.json"
+</code></pre>
+<p>For nested objects, increase depth:</p>
+<pre><code>
+Get-Process |
+    Select-Object -First 5 * |
+    ConvertTo-Json -Depth 5
+</code></pre>
+<hr>
+<h2 id="14-calculated-properties">14. Calculated Properties</h2>
+<p>Calculated properties let you create custom output columns.</p>
+<p>Example: show process memory in MB.</p>
+<pre><code>
+Get-Process |
+    Select-Object Name, Id,
+        @{
+            Name = 'MemoryMB'
+            Expression = { [math]::Round($_.WorkingSet64 / 1MB, 2) }
+        }
+</code></pre>
+<p>Example: disk size and free space in GB.</p>
+<pre><code>
+Get-CimInstance Win32_LogicalDisk |
+    Where-Object DriveType -eq 3 |
+    Select-Object DeviceID, VolumeName,
+        @{
+            Name = 'SizeGB'
+            Expression = { [math]::Round($_.Size / 1GB, 2) }
+        },
+        @{
+            Name = 'FreeGB'
+            Expression = { [math]::Round($_.FreeSpace / 1GB, 2) }
+        }
+</code></pre>
+<p>Structure:</p>
+<pre><code>
+@{
+    Name = 'NewColumnName'
+    Expression = { value calculation here }
+}
+</code></pre>
+<hr>
+<h2 id="15-combining-multiple-conditions">15. Combining Multiple Conditions</h2>
+<p>Use <code>-and</code>, <code>-or</code>, and <code>-not</code>.</p>
+<p>Running services with names starting with <code>Win</code>:</p>
+<pre><code>
+Get-Service |
+    Where-Object {
+        $_.Status -eq 'Running' -and
+        $_.Name -like 'Win*'
+    }
+</code></pre>
+<p>Stopped services whose names contain <code>update</code>:</p>
+<pre><code>
+Get-Service |
+    Where-Object {
+        $_.Status -eq 'Stopped' -and
+        $_.Name -like '*update*'
+    }
+</code></pre>
+<p>Processes using high memory or high CPU:</p>
+<pre><code>
+Get-Process |
+    Where-Object {
+        $_.WorkingSet64 -gt 500MB -or
+        $_.CPU -gt 100
+    }
+</code></pre>
+<p>Negation:</p>
+<pre><code>
+Get-Service |
+    Where-Object {
+        $_.Status -ne 'Running'
+    }
+</code></pre>
+<p>Or:</p>
+<pre><code>
+Get-Service |
+    Where-Object {
+        -not ($_.Status -eq 'Running')
+    }
+</code></pre>
+<hr>
+<h2 id="16-finding-top-results">16. Finding Top Results</h2>
+<p>Top 10 processes by memory:</p>
+<pre><code>
+Get-Process |
+    Sort-Object WorkingSet64 -Descending |
+    Select-Object -First 10 Name, Id,
+        @{
+            Name = 'MemoryMB'
+            Expression = { [math]::Round($_.WorkingSet64 / 1MB, 2) }
+        }
+</code></pre>
+<p>Top 20 largest files in a folder:</p>
+<pre><code>
+Get-ChildItem "C:\Temp" -File -Recurse |
+    Sort-Object Length -Descending |
+    Select-Object -First 20 FullName,
+        @{
+            Name = 'SizeMB'
+            Expression = { [math]::Round($_.Length / 1MB, 2) }
+        }
+</code></pre>
+<hr>
+<h2 id="17-searching-files">17. Searching Files</h2>
+<p>Find files by extension:</p>
+<pre><code>
+Get-ChildItem "C:\Temp" -Filter *.log -Recurse
+</code></pre>
+<p>Find large files:</p>
+<pre><code>
+Get-ChildItem "C:\Temp" -File -Recurse |
+    Where-Object Length -gt 100MB
+</code></pre>
+<p>Find recently modified files:</p>
+<pre><code>
+Get-ChildItem "C:\Temp" -File -Recurse |
+    Where-Object LastWriteTime -gt (Get-Date).AddDays(-7)
+</code></pre>
+<p>Find files containing text:</p>
+<pre><code>
+Select-String -Path "C:\Temp\*.log" -Pattern "error"
+</code></pre>
+<p>Recursive text search:</p>
+<pre><code>
+Get-ChildItem "C:\Temp" -Filter *.log -Recurse |
+    Select-String -Pattern "error"
+</code></pre>
+<hr>
+<h2 id="18-querying-services">18. Querying Services</h2>
+<p>All services:</p>
+<pre><code>
+Get-Service
+</code></pre>
+<p>Running services:</p>
+<pre><code>
+Get-Service |
+    Where-Object Status -eq 'Running'
+</code></pre>
+<p>Stopped services:</p>
+<pre><code>
+Get-Service |
+    Where-Object Status -eq 'Stopped'
+</code></pre>
+<p>Services matching a name:</p>
+<pre><code>
+Get-Service |
+    Where-Object Name -like '*update*'
+</code></pre>
+<p>Services sorted by status then name:</p>
+<pre><code>
+Get-Service |
+    Sort-Object Status, Name |
+    Select-Object Name, DisplayName, Status
+</code></pre>
+<p>Services with startup type:</p>
+<pre><code>
+Get-CimInstance Win32_Service |
+    Select-Object Name, DisplayName, State, StartMode
+</code></pre>
+<p>Automatic services that are not running:</p>
+<pre><code>
+Get-CimInstance Win32_Service |
+    Where-Object {
+        $_.StartMode -eq 'Auto' -and
+        $_.State -ne 'Running'
+    } |
+    Select-Object Name, DisplayName, State, StartMode
+</code></pre>
+<hr>
+<h2 id="19-querying-processes">19. Querying Processes</h2>
+<p>All processes:</p>
+<pre><code>
+Get-Process
+</code></pre>
+<p>Processes matching name:</p>
+<pre><code>
+Get-Process |
+    Where-Object ProcessName -like '*edge*'
+</code></pre>
+<p>High CPU processes:</p>
+<pre><code>
+Get-Process |
+    Where-Object CPU -gt 10 |
+    Sort-Object CPU -Descending |
+    Select-Object Name, Id, CPU
+</code></pre>
+<p>High memory processes:</p>
+<pre><code>
+Get-Process |
+    Sort-Object WorkingSet64 -Descending |
+    Select-Object -First 15 Name, Id,
+        @{
+            Name = 'MemoryMB'
+            Expression = { [math]::Round($_.WorkingSet64 / 1MB, 2) }
+        }
+</code></pre>
+<hr>
+<h2 id="20-querying-network-connections">20. Querying Network Connections</h2>
+<p>Established TCP connections:</p>
+<pre><code>
+Get-NetTCPConnection |
+    Where-Object State -eq 'Established'
+</code></pre>
+<p>Listening ports:</p>
+<pre><code>
+Get-NetTCPConnection |
+    Where-Object State -eq 'Listen' |
+    Select-Object LocalAddress, LocalPort, OwningProcess
+</code></pre>
+<p>Listening ports with process name:</p>
+<pre><code>
+Get-NetTCPConnection |
+    Where-Object State -eq 'Listen' |
+    Select-Object LocalAddress, LocalPort, OwningProcess,
+        @{
+            Name = 'ProcessName'
+            Expression = {
+                (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).Name
+            }
+        }
+</code></pre>
+<p>Connections to a specific remote port:</p>
+<pre><code>
+Get-NetTCPConnection |
+    Where-Object RemotePort -eq 443
+</code></pre>
+<hr>
+<h2 id="21-querying-installed-packages">21. Querying Installed Packages</h2>
+<p>Winget packages:</p>
+<pre><code>
+Get-WingetPackage
+</code></pre>
+<p>Packages with IDs starting with <code>MSIX/</code>:</p>
+<pre><code>
+Get-WingetPackage |
+    Where-Object Id -like 'MSIX/*'
+</code></pre>
+<p>Show selected package properties:</p>
+<pre><code>
+Get-WingetPackage |
+    Select-Object Name, Id, Version, Source
+</code></pre>
+<p>Sort by package ID:</p>
+<pre><code>
+Get-WingetPackage |
+    Select-Object Name, Id, Version, Source |
+    Sort-Object Id
+</code></pre>
+<p>Group by source:</p>
+<pre><code>
+Get-WingetPackage |
+    Group-Object Source
+</code></pre>
+<p>Export package list:</p>
+<pre><code>
+Get-WingetPackage |
+    Select-Object Name, Id, Version, Source |
+    Export-Csv "$env:USERPROFILE\Desktop\WingetPackages.csv" -NoTypeInformation
+</code></pre>
+<hr>
+<h2 id="22-the-most-reusable-pattern">22. The Most Reusable Pattern</h2>
+<p>Use this as a template:</p>
+<pre><code>
+Command |
+    Where-Object Property -like 'pattern' |
+    Select-Object Property1, Property2 |
+    Sort-Object Property1
+</code></pre>
+<p>Example:</p>
+<pre><code>
+Get-WingetPackage |
+    Where-Object Id -like 'MSIX/*' |
+    Select-Object Name, Id, Version |
+    Sort-Object Id
+</code></pre>
+<p>Another example:</p>
+<pre><code>
+Get-Service |
+    Where-Object Name -like 'Win*' |
+    Select-Object Name, DisplayName, Status |
+    Sort-Object Name
+</code></pre>
+<hr>
+<h2 id="23-quick-reference-cheatsheet">23. Quick Reference Cheatsheet</h2>
+<h3>Filter</h3>
+<pre><code>
+Command |
+    Where-Object Property -eq 'Value'
+</code></pre>
+<h3>Wildcard filter</h3>
+<pre><code>
+Command |
+    Where-Object Property -like '*text*'
+</code></pre>
+<h3>Regex filter</h3>
+<pre><code>
+Command |
+    Where-Object Property -match '^text'
+</code></pre>
+<h3>Select columns</h3>
+<pre><code>
+Command |
+    Select-Object Property1, Property2
+</code></pre>
+<h3>Expand one property</h3>
+<pre><code>
+Command |
+    Select-Object -ExpandProperty Property
+</code></pre>
+<h3>Sort ascending</h3>
+<pre><code>
+Command |
+    Sort-Object Property
+</code></pre>
+<h3>Sort descending</h3>
+<pre><code>
+Command |
+    Sort-Object Property -Descending
+</code></pre>
+<h3>Take first results</h3>
+<pre><code>
+Command |
+    Select-Object -First 10
+</code></pre>
+<h3>Group and count</h3>
+<pre><code>
+Command |
+    Group-Object Property
+</code></pre>
+<h3>Export CSV</h3>
+<pre><code>
+Command |
+    Export-Csv "C:\Path\File.csv" -NoTypeInformation
+</code></pre>
+<h3>Format table</h3>
+<pre><code>
+Command |
+    Format-Table -AutoSize
+</code></pre>
+<hr>
+<h2 id="24-practical-troubleshooting-tips">24. Practical Troubleshooting Tips</h2>
+<h3>If a property does not work, inspect the object</h3>
+<pre><code>
+Command |
+    Get-Member
+</code></pre>
+<h3>If output is cut off, use <code>Format-List</code></h3>
+<pre><code>
+Command |
+    Select-Object -First 1 |
+    Format-List *
+</code></pre>
+<h3>If you only need values, use <code>-ExpandProperty</code></h3>
+<pre><code>
+Command |
+    Select-Object -ExpandProperty Name
+</code></pre>
+<h3>Put formatting commands last</h3>
+<p>Good:</p>
+<pre><code>
+Get-Service |
+    Where-Object Status -eq 'Running' |
+    Format-Table -AutoSize
+</code></pre>
+<p>Avoid:</p>
+<pre><code>
+Get-Service |
+    Format-Table -AutoSize |
+    Where-Object Status -eq 'Running'
+</code></pre>
+<h3>Prefer objects over text</h3>
+<p>PowerShell is strongest when you keep data as objects until the final output step.</p>
+<p>Good:</p>
+<pre><code>
+Get-Service |
+    Where-Object Status -eq 'Running' |
+    Select-Object Name, Status
+</code></pre>
+<p>Less ideal:</p>
+<pre><code>
+Get-Service |
+    Out-String |
+    Select-String "Running"
+</code></pre>
+<hr>
+<h2 id="25-suggested-practice-commands">25. Suggested Practice Commands</h2>
+<p>Try these and modify them:</p>
+<pre><code>
+Get-Service |
+    Where-Object Status -eq 'Running' |
+    Select-Object Name, Status |
+    Sort-Object Name
+</code></pre>
+<pre><code>
+Get-Process |
+    Sort-Object CPU -Descending |
+    Select-Object -First 10 Name, Id, CPU
+</code></pre>
+<pre><code>
+Get-NetTCPConnection |
+    Where-Object State -eq 'Listen' |
+    Select-Object LocalAddress, LocalPort, OwningProcess
+</code></pre>
+<pre><code>
+Get-WingetPackage |
+    Where-Object Id -like 'MSIX/*' |
+    Select-Object Name, Id, Version
+</code></pre>
+<pre><code>
+Get-ChildItem "$env:USERPROFILE\Downloads" -File |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 20 Name, LastWriteTime, Length
+</code></pre>
+<hr>
+<h2 id="summary">Summary</h2>
+<p>Most PowerShell queries are built from a few core commands:</p>
+<table>
+<tr><th>Command</th><th>Purpose</th></tr>
+<tr><td><code>Where-Object</code></td><td>Filter objects</td></tr>
+<tr><td><code>Select-Object</code></td><td>Choose properties</td></tr>
+<tr><td><code>Sort-Object</code></td><td>Sort results</td></tr>
+<tr><td><code>Group-Object</code></td><td>Group and count</td></tr>
+<tr><td><code>Format-Table</code></td><td>Display table output</td></tr>
+<tr><td><code>Format-List</code></td><td>Display detailed output</td></tr>
+<tr><td><code>Export-Csv</code></td><td>Save structured results</td></tr>
+</table>
+<p>Core pattern:</p>
+<pre><code>
+Get-Something |
+    Where-Object SomeProperty -like 'SomePattern' |
+    Select-Object Property1, Property2 |
+    Sort-Object Property1
+</code></pre>
+<div class="footer">
+<p>LOU32HELP &mdash; PowerShell Query Patterns Reference<br>
+Generated from LOU32HELP_Powershell_UsefulQueryPatterns.md</p>
+</div>
+</body>
+</html>
+
