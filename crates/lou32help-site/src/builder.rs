@@ -120,7 +120,8 @@ pub fn build_site_from_view(
         .keys()
         .map(|tag| {
             let page_path = format!("/tags/{tag}/");
-            let out = safe_output_path(out_dir, &PathBuf::from("tags").join(tag).join("index.html"))?;
+            let out =
+                safe_output_path(out_dir, &PathBuf::from("tags").join(tag).join("index.html"))?;
             Ok((out, page_path, render_tag_page(view, tag).into_string()))
         })
         .collect::<Result<Vec<_>>>()?;
@@ -130,7 +131,11 @@ pub fn build_site_from_view(
         .iter()
         .map(|doc| {
             let out = safe_output_path(out_dir, &slug_to_output_path(&doc.metadata.slug))?;
-            Ok((out, doc.metadata.slug.clone(), render_document_page(view, doc).into_string()))
+            Ok((
+                out,
+                doc.metadata.slug.clone(),
+                render_document_page(view, doc).into_string(),
+            ))
         })
         .collect::<Result<Vec<_>>>()?;
 

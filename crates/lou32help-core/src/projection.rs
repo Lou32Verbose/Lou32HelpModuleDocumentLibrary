@@ -384,7 +384,12 @@ mod tests {
 
     #[test]
     fn tag_index_groups_and_sorts() {
-        let doc_a = make_doc("/a/", "topic", &["networking", "powershell"], DocStatus::Published);
+        let doc_a = make_doc(
+            "/a/",
+            "topic",
+            &["networking", "powershell"],
+            DocStatus::Published,
+        );
         let doc_b = make_doc("/b/", "topic", &["networking"], DocStatus::Published);
         let doc_c = make_doc("/c/", "topic", &["security"], DocStatus::Published);
         let docs = vec![&doc_a, &doc_b, &doc_c];
@@ -401,9 +406,39 @@ mod tests {
 
     #[test]
     fn recent_documents_sorts_by_updated() {
-        let old = make_doc_full("/old/", "Old", "topic", &[], &[], &[], &[], DocStatus::Published, "2025-01-01");
-        let new = make_doc_full("/new/", "New", "topic", &[], &[], &[], &[], DocStatus::Published, "2026-03-20");
-        let mid = make_doc_full("/mid/", "Mid", "topic", &[], &[], &[], &[], DocStatus::Published, "2025-06-15");
+        let old = make_doc_full(
+            "/old/",
+            "Old",
+            "topic",
+            &[],
+            &[],
+            &[],
+            &[],
+            DocStatus::Published,
+            "2025-01-01",
+        );
+        let new = make_doc_full(
+            "/new/",
+            "New",
+            "topic",
+            &[],
+            &[],
+            &[],
+            &[],
+            DocStatus::Published,
+            "2026-03-20",
+        );
+        let mid = make_doc_full(
+            "/mid/",
+            "Mid",
+            "topic",
+            &[],
+            &[],
+            &[],
+            &[],
+            DocStatus::Published,
+            "2025-06-15",
+        );
         let docs = vec![&old, &new, &mid];
 
         let recent = recent_documents(&docs);
@@ -432,7 +467,11 @@ mod tests {
         let parent = &nodes["powershell"];
         assert_eq!(parent.title, "PowerShell");
         assert!(parent.parent.is_none());
-        assert!(parent.children.contains(&"powershell/networking".to_string()));
+        assert!(
+            parent
+                .children
+                .contains(&"powershell/networking".to_string())
+        );
 
         let child = &nodes["powershell/networking"];
         assert_eq!(child.parent.as_deref(), Some("powershell"));
@@ -442,19 +481,37 @@ mod tests {
     #[test]
     fn computed_related_scores_by_topic_and_tags() {
         let doc_a = make_doc_full(
-            "/a/", "A", "powershell/networking",
-            &["networking", "bits"], &[], &["windows"], &[],
-            DocStatus::Published, "2026-03-20",
+            "/a/",
+            "A",
+            "powershell/networking",
+            &["networking", "bits"],
+            &[],
+            &["windows"],
+            &[],
+            DocStatus::Published,
+            "2026-03-20",
         );
         let doc_b = make_doc_full(
-            "/b/", "B", "powershell/networking",
-            &["networking"], &[], &["windows"], &[],
-            DocStatus::Published, "2026-03-20",
+            "/b/",
+            "B",
+            "powershell/networking",
+            &["networking"],
+            &[],
+            &["windows"],
+            &[],
+            DocStatus::Published,
+            "2026-03-20",
         );
         let doc_c = make_doc_full(
-            "/c/", "C", "cli-tools/wget",
-            &["wget"], &[], &["linux"], &[],
-            DocStatus::Published, "2026-03-20",
+            "/c/",
+            "C",
+            "cli-tools/wget",
+            &["wget"],
+            &[],
+            &["linux"],
+            &[],
+            DocStatus::Published,
+            "2026-03-20",
         );
         let docs = vec![&doc_a, &doc_b, &doc_c];
 
