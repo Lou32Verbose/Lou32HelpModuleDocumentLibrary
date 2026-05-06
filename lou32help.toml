@@ -3,7 +3,7 @@ title = "LOU32HELP"
 tagline = "Lou32 Help Module Document Library"
 description = "Lou32 Help Module Document Library (L32HMDL)"
 # Used for canonical <link> tags in generated HTML
-base_url = "https://lou32help.example.com"
+base_url = "https://lou32verbose.github.io/Lou32HelpSite"
 copyright = "Help Module Document Library maintained by Lou32."
 
 [paths]
