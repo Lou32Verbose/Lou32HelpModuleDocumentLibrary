@@ -1,6 +1,9 @@
 use crate::layout::{document_teaser, layout, related_column, render_html_body, topic_breadcrumbs};
-use lou32help_core::{Document, TopicNode, WorkspaceView, markdown_to_html};
+use lou32help_core::{Document, TocEntry, TopicNode, WorkspaceView, markdown_to_html_with_toc};
 use maud::{Markup, html};
+
+/// Minimum number of h2 entries before a TOC is rendered.
+const TOC_MIN_H2: usize = 3;
 
 pub(crate) fn render_home_page(view: &WorkspaceView<'_>) -> Markup {
     let title = view.config().site.title.clone();
@@ -39,6 +42,7 @@ pub(crate) fn render_home_page(view: &WorkspaceView<'_>) -> Markup {
             (doc_table(&recent))
         },
         false,
+        None,
     )
 }
 
@@ -67,6 +71,7 @@ pub(crate) fn render_topics_page(view: &WorkspaceView<'_>) -> Markup {
             }
         },
         false,
+        None,
     )
 }
 
@@ -128,6 +133,7 @@ pub(crate) fn render_search_page(view: &WorkspaceView<'_>) -> Markup {
             }
         },
         true,
+        None,
     )
 }
 
@@ -155,6 +161,7 @@ pub(crate) fn render_tags_page(view: &WorkspaceView<'_>) -> Markup {
             }
         },
         false,
+        None,
     )
 }
 
@@ -213,6 +220,7 @@ pub(crate) fn render_topic_page(view: &WorkspaceView<'_>, topic: &TopicNode) -> 
             (doc_table(&docs))
         },
         false,
+        None,
     )
 }
 
@@ -239,6 +247,7 @@ pub(crate) fn render_tag_page(view: &WorkspaceView<'_>, tag: &str) -> Markup {
             (doc_table(&docs))
         },
         false,
+        None,
     )
 }
 
@@ -246,7 +255,12 @@ pub(crate) fn render_document_page(view: &WorkspaceView<'_>, doc: &Document) -> 
     let explicit = view.explicit_related(doc);
     let backlinks = view.backlinks(doc);
     let computed = view.computed_related(doc);
-    let html_body = markdown_to_html(&doc.body);
+    let (html_body, toc) = markdown_to_html_with_toc(&doc.body);
+    let source_path = format!(
+        "{}/{}.md",
+        view.config().paths.content_dir.display(),
+        doc.metadata.slug.trim_matches('/'),
+    );
 
     layout(
         view,
@@ -268,40 +282,45 @@ pub(crate) fn render_document_page(view: &WorkspaceView<'_>, doc: &Document) -> 
                     }
                 }
                 span.sep { "/" }
-                span { (doc.metadata.title.as_str()) }
+                strong { (doc.metadata.title.as_str()) }
             }
             article.doc-page {
                 header.doc-header {
                     p.muted { (doc.metadata.page_type.as_str()) }
                     h1 { (doc.metadata.title.as_str()) }
                     p { (doc.metadata.summary.as_str()) }
-                    p.muted {
-                        "Slug: " code { (doc.metadata.slug.as_str()) }
-                        " | Topic: " a href=(format!("/topics/{}/", doc.metadata.topic)) { (doc.metadata.topic.as_str()) }
-                        " | Updated: " (doc.metadata.updated)
-                    }
-                    @if !doc.metadata.platforms.is_empty() {
-                        p.muted {
-                            "Platforms: "
-                            @for platform in &doc.metadata.platforms {
-                                a.platform href=(format!("/search/?platform={platform}")) { (platform) }
-                                " "
+                    dl.doc-meta {
+                        dt { "Slug" }
+                        dd { code { (doc.metadata.slug.as_str()) } }
+                        dt { "Topic" }
+                        dd { a href=(format!("/topics/{}/", doc.metadata.topic)) { (doc.metadata.topic.as_str()) } }
+                        dt { "Updated" }
+                        dd { (doc.metadata.updated) }
+                        @if !doc.metadata.platforms.is_empty() {
+                            dt { "Platforms" }
+                            dd {
+                                @for platform in &doc.metadata.platforms {
+                                    a.platform href=(format!("/search/?platform={platform}")) { (platform) }
+                                    " "
+                                }
                             }
                         }
-                    }
-                    @if !doc.metadata.tags.is_empty() {
-                        p.muted {
-                            "Tags: "
-                            @for tag in &doc.metadata.tags {
-                                a.tag href=(format!("/tags/{tag}/")) { (tag) }
-                                " "
+                        @if !doc.metadata.tags.is_empty() {
+                            dt { "Tags" }
+                            dd {
+                                @for tag in &doc.metadata.tags {
+                                    a.tag href=(format!("/tags/{tag}/")) { (tag) }
+                                    " "
+                                }
                             }
                         }
                     }
                 }
+                (render_toc(&toc))
                 div.doc-content {
                     (render_html_body(&html_body))
                 }
+                p.back-to-top { "[ " a href="#page-top" { "^ top" } " ]" }
             }
             h2 { "Related" }
             div.related-list {
@@ -311,6 +330,7 @@ pub(crate) fn render_document_page(view: &WorkspaceView<'_>, doc: &Document) -> 
             }
         },
         false,
+        Some(&source_path),
     )
 }
 
@@ -323,6 +343,24 @@ fn doc_table(docs: &[&Document]) -> Markup {
                 tr { th { "Title" } th { "Type" } th { "Summary" } }
                 @for doc in docs {
                     (document_teaser(doc))
+                }
+            }
+        }
+    }
+}
+
+fn render_toc(entries: &[TocEntry]) -> Markup {
+    let h2_count = entries.iter().filter(|e| e.level == 2).count();
+    html! {
+        @if h2_count >= TOC_MIN_H2 {
+            nav.toc aria-label="Table of contents" {
+                p.toc-title { "Contents" }
+                ul {
+                    @for entry in entries {
+                        li.(format!("toc-level-{}", entry.level)) {
+                            a href=(format!("#{}", entry.slug)) { (entry.text) }
+                        }
+                    }
                 }
             }
         }

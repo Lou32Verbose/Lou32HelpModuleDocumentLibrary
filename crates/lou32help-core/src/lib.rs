@@ -31,7 +31,10 @@ pub use library::{TopicNode, Workspace, WorkspaceView};
 pub use path_safety::{
     PathSafetyIssue, RoutePathKind, inspect_route_path, validate_output_relative_path,
 };
-pub use render::{CONTENT_SECURITY_POLICY, markdown_to_html, markdown_to_terminal};
+pub use render::{
+    CONTENT_SECURITY_POLICY, TocEntry, markdown_to_html, markdown_to_html_with_toc,
+    markdown_to_terminal,
+};
 pub use search::{
     BrowserSearchEntry, BrowserSearchIndex, SearchIndex, SearchQuery, SearchResult,
     build_browser_search_index, build_search_index, search_browser_index, search_index,

@@ -9,6 +9,7 @@ pub(crate) fn layout(
     active_nav: Option<&str>,
     body: Markup,
     include_search_script: bool,
+    doc_source_path: Option<&str>,
 ) -> Markup {
     let page_title = if title == view.config().site.title {
         title.to_string()
@@ -16,6 +17,13 @@ pub(crate) fn layout(
         format!("{title} | {}", view.config().site.title)
     };
     let canonical_url = canonical_url(view.config().site.base_url.as_str(), page_path);
+    let edit_url = doc_source_path.and_then(|src| {
+        view.config()
+            .site
+            .source_repo
+            .as_deref()
+            .map(|repo| edit_url(repo, &view.config().site.source_branch, src))
+    });
 
     html! {
         (DOCTYPE)
@@ -31,7 +39,7 @@ pub(crate) fn layout(
                 script src="/assets/theme.js" {}
             }
             body {
-                div.page-shell {
+                div.page-shell id="page-top" {
                     header.site-header {
                         a.brand href="/" {
                             span.brand-mark { "L32" }
@@ -67,6 +75,9 @@ pub(crate) fn layout(
                     footer.site-footer {
                         p { (view.config().site.description.as_str()) }
                         p { (view.config().site.copyright.as_str()) }
+                        @if let Some(url) = &edit_url {
+                            p { "[ " a href=(url) rel="noopener noreferrer" { "edit on github" } " ]" }
+                        }
                     }
                 }
                 @if include_search_script {
@@ -157,4 +168,10 @@ fn canonical_url(base_url: &str, page_path: &str) -> String {
     } else {
         format!("{base}{}", page_path)
     }
+}
+
+fn edit_url(repo: &str, branch: &str, source_path: &str) -> String {
+    let repo = repo.trim_end_matches('/');
+    let path = source_path.trim_start_matches('/');
+    format!("{repo}/blob/{branch}/{path}")
 }

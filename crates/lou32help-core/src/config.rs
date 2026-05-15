@@ -31,6 +31,17 @@ pub struct SiteConfig {
     pub base_url: String,
     /// Copyright notice.
     pub copyright: String,
+    /// Optional source repository URL (e.g. `https://github.com/owner/repo`).
+    /// When set, document pages render an "edit on github" link in the footer.
+    #[serde(default)]
+    pub source_repo: Option<String>,
+    /// Branch to link to when building "edit on github" URLs. Defaults to `master`.
+    #[serde(default = "default_source_branch")]
+    pub source_branch: String,
+}
+
+fn default_source_branch() -> String {
+    "master".to_string()
 }
 
 /// Filesystem path configuration.
